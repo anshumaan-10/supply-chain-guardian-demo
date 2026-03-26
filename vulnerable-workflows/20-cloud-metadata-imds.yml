@@ -1,0 +1,30 @@
+# =============================================================================
+# Scenario 20: Cloud Metadata and IMDS Access
+# Demonstrates: Cloud credential theft via metadata endpoints
+# Triggers: SCA-110
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Cloud Metadata Access
+on: [push]
+
+jobs:
+  aws-metadata-access:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-110: AWS IMDS endpoint access
+      - name: Get instance metadata
+        run: |
+          curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/
+          curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/api/token
+
+      # SCA-110: GCP metadata endpoint
+      - name: Get GCP metadata
+        run: |
+          curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+
+      # SCA-110: Azure metadata endpoint
+      - name: Get Azure metadata
+        run: |
+          curl -H "Metadata: true" "http://metadata.azure.com/metadata/identity/oauth2/token?api-version=2018-02-01"

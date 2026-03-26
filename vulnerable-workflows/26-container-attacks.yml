@@ -1,0 +1,53 @@
+# =============================================================================
+# Scenario 26b: Container Build Pipeline
+# Demonstrates: Container runtime and build attacks in workflow context
+# Triggers: SCA-073, SCA-074, SCA-076, SCA-077, SCA-078, SCA-079, SCA-024
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Container Build and Deploy
+on: [push]
+
+jobs:
+  build-container:
+    runs-on: ubuntu-latest
+    # SCA-073: Privileged container in CI job
+    container:
+      image: docker:latest
+      options: --privileged
+      volumes:
+        # SCA-076: Docker socket mount (container escape)
+        - /var/run/docker.sock:/var/run/docker.sock
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-024: Docker Hub image with no org qualifier / latest tag
+      - name: Pull base images
+        run: |
+          docker pull ubuntu:latest
+          docker pull postgres
+          docker pull redis:latest
+          docker pull nginx
+
+      # SCA-077: Secret passed via docker build-arg
+      - name: Build application image
+        run: |
+          docker build \
+            --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} \
+            --build-arg DEPLOY_KEY=${{ secrets.DEPLOY_KEY }} \
+            --build-arg DATABASE_PASSWORD=${{ secrets.DB_PASS }} \
+            -t myapp:latest .
+
+      # SCA-079: Insecure registry configuration
+      - name: Push to internal registry
+        run: |
+          dockerd --insecure-registry registry.internal:5000 &
+          docker tag myapp:latest registry.internal:5000/myapp:latest
+          # SCA-078: Docker push without signing
+          docker push registry.internal:5000/myapp:latest
+          docker push myapp:latest
+
+      # SCA-074: Unpinned container images (mutable tags)
+      - name: Run integration tests
+        run: |
+          docker run --rm postgres:latest pg_isready
+          docker run --rm redis:latest redis-cli ping

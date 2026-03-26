@@ -1,0 +1,64 @@
+# =============================================================================
+# Scenario 28: Artifact Integrity Attacks
+# Demonstrates: Artifact poisoning, path traversal, overwrite, TOCTOU
+# Triggers: SCA-036, SCA-067, SCA-068, SCA-069, SCA-070, SCA-071, SCA-072
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Build and Release Pipeline
+on:
+  workflow_run:
+    workflows: ["CI Build"]
+    types: [completed]
+
+permissions: write-all
+
+jobs:
+  # SCA-072: Build and publish in same job (TOCTOU)
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build application
+        run: |
+          npm install
+          npm run build
+
+      # SCA-049: Upload artifact with wildcard path
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: .
+          # SCA-071: Artifact overwrite enabled
+          overwrite: true
+
+      # SCA-049: Upload sensitive files in artifact
+      - name: Upload environment
+        uses: actions/upload-artifact@v4
+        with:
+          name: env-files
+          path: |
+            .env
+            .npmrc
+            .env.production
+
+      - name: Publish package
+        run: npm publish
+
+  # SCA-069: Download untrusted artifact from workflow_run
+  deploy-from-artifact:
+    runs-on: ubuntu-latest
+    needs: build-and-publish
+    steps:
+      # SCA-069: Untrusted artifact in workflow_run context
+      - name: Download build artifact
+        run: |
+          gh api repos/${{ github.repository }}/actions/artifacts
+          gh run download ${{ github.event.workflow_run.id }}
+
+      # SCA-070: Artifact download path traversal
+      - name: Extract artifacts
+        run: |
+          unzip -o artifact.zip -d ../../../etc/
+          tar xf release.tar.gz -C /tmp/../../../

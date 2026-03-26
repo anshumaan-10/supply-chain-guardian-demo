@@ -1,0 +1,39 @@
+# =============================================================================
+# Scenario 26: Container Supply Chain Attacks
+# Demonstrates: Privileged containers, socket mounts, unpinned images, pipe-to-shell
+# Triggers: SCA-073, SCA-074, SCA-075, SCA-076, SCA-077, SCA-078, SCA-079,
+#           SCA-080, SCA-081, SCA-082, SCA-083
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+
+# --- Dockerfile with multiple container vulnerabilities ---
+# SCA-083: Running as root (no USER directive)
+# SCA-080: Unpinned base image FROM
+# SCA-082: Pipe-to-shell in RUN
+# SCA-081: Remote URL in ADD
+FROM node:latest
+
+RUN apt-get update && apt-get install -y curl wget
+
+# SCA-082: Pipe-to-shell patterns
+RUN curl -fsSL https://get.docker.com | bash
+RUN wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | sh
+RUN curl -s https://codecov.io/bash | bash
+
+# SCA-081: Remote URL in ADD instruction
+ADD https://example.com/download/binary /usr/local/bin/tool
+ADD https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip /tmp/
+
+# SCA-077: Secrets passed via build args
+ARG DEPLOY_TOKEN
+ARG DATABASE_PASSWORD
+ARG NPM_AUTH_TOKEN
+
+ENV TOKEN=${DEPLOY_TOKEN}
+
+COPY . /app
+WORKDIR /app
+RUN npm install
+
+EXPOSE 3000
+CMD ["node", "server.js"]

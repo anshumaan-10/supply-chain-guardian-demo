@@ -14,7 +14,7 @@ on:
     branches: [main]
   pull_request:
 
-# ⚠️ WRITE-ALL: Every job and step gets full permissions
+# WRITE-ALL: Every job and step gets full permissions
 permissions: write-all
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    # ⚠️ No job-level permission scope — inherits write-all
+    # No job-level permission scope — inherits write-all
     steps:
       - uses: actions/checkout@v4
       - run: npm test
@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ⚠️ OVERPRIVILEGED: Deploy step has contents:write even though it only needs deployments:write
+      # OVERPRIVILEGED: Deploy step has contents:write even though it only needs deployments:write
       - name: Deploy to production
         run: |
           echo "Deploying..."

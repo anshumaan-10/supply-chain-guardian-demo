@@ -1,0 +1,37 @@
+# =============================================================================
+# Scenario 22: CDN Compromise and Polyfill.io Attack
+# Demonstrates: CDN supply chain compromise, malicious script injection
+# Triggers: SCA-046, SCA-025
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Frontend Build with CDN Dependencies
+on: [push]
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-046: Polyfill.io supply chain attack
+      - name: Build frontend assets
+        run: |
+          cat > index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <script src="https://cdn.polyfill.io/v3/polyfill.min.js"></script>
+            <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+          </head>
+          <body>
+            <div id="app"></div>
+          </body>
+          </html>
+          EOF
+
+      # SCA-025: Webflow CDN dependencies
+      - name: Include external CDN resources
+        run: |
+          echo '<script src="https://cdn.jsdelivr.net/npm/some-package@latest"></script>' >> index.html
+          echo '<script src="https://unpkg.com/react@latest/umd/react.production.min.js"></script>' >> index.html
+          echo '<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/latest/lodash.min.js"></script>' >> index.html

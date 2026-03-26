@@ -33,3 +33,4 @@ deep-scan-report.json
 .env.local
 *.pem
 *.key
+public/

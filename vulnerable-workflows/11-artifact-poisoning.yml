@@ -31,20 +31,20 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      # ⚠️ UNSIGNED ARTIFACT: Downloaded without checksum verification
+      # UNSIGNED ARTIFACT: Downloaded without checksum verification
       - uses: actions/download-artifact@v4
         with:
           name: build-output
           path: dist/
 
-      # ⚠️ TOCTOU: No integrity check between download and use
+      # TOCTOU: No integrity check between download and use
       - name: Deploy artifact
         run: |
           cd dist/
           tar -xzf release.tar.gz
           ./deploy.sh
 
-      # ⚠️ ARTIFACT FROM EXTERNAL SOURCE: No provenance verification
+      # ARTIFACT FROM EXTERNAL SOURCE: No provenance verification
       - name: Download external binary
         run: |
           curl -sL https://github.com/someuser/tool/releases/download/v1.0/tool-linux-amd64 -o /usr/local/bin/tool

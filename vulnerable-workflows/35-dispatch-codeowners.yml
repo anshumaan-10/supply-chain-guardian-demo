@@ -1,0 +1,52 @@
+# =============================================================================
+# Scenario 35: Workflow Dispatch Token Abuse and CODEOWNERS Injection
+# Demonstrates: Workflow dispatch abuse, CODEOWNERS injection, workflow_run
+# Triggers: SCA-054, SCA-059, SCA-028
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Release Automation
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+      deploy_target:
+        description: 'Deploy target environment'
+        required: true
+  workflow_run:
+    workflows: ["CI Build", "Security Scan"]
+    types: [completed, requested]
+
+permissions: write-all
+
+jobs:
+  # SCA-054: Workflow dispatch token abuse
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-054: Using dispatch inputs unsafely
+      - name: Create release
+        run: |
+          echo "Creating release ${{ github.event.inputs.version }}"
+          git tag -a "v${{ github.event.inputs.version }}" -m "Release"
+          git push origin "v${{ github.event.inputs.version }}"
+
+      # SCA-059: CODEOWNERS file manipulation
+      - name: Update code owners
+        run: |
+          cat .github/CODEOWNERS
+          echo "* @new-owner" >> .github/CODEOWNERS
+
+  # SCA-028: workflow_run privilege escalation
+  post-ci-deploy:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy after CI
+        run: |
+          echo "Deploying after workflow_run completed"
+          echo "Run ID: ${{ github.event.workflow_run.id }}"

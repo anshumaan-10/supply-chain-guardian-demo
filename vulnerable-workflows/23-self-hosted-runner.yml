@@ -1,0 +1,40 @@
+# =============================================================================
+# Scenario 23: Self-Hosted Runner and Marketplace Action Risks
+# Demonstrates: Self-hosted runner compromise, unpinned marketplace actions
+# Triggers: SCA-035, SCA-051, SCA-033
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Self-Hosted Build Pipeline
+on: [push, pull_request]
+
+permissions: write-all
+
+jobs:
+  # SCA-035: Self-hosted runner compromise risk
+  build-on-self-hosted:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-051: Unpinned marketplace action (no version tag)
+      - name: Run code quality check
+        uses: super-linter/super-linter
+
+      # SCA-051: Another unpinned marketplace action
+      - name: Deploy application
+        uses: peaceiris/actions-gh-pages
+
+      # SCA-033: Mutable tag references
+      - name: Run security scan
+        uses: aquasecurity/trivy-action@master
+
+      - name: Run formatter
+        uses: psf/black@stable
+
+  # SCA-035: Self-hosted with label array
+  test-on-self-hosted:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: npm test

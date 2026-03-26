@@ -1,0 +1,60 @@
+# =============================================================================
+# Scenario 31: CircleCI Secret Exposure
+# Demonstrates: CircleCI credential leaks and token abuse
+# Triggers: SCA-107, SCA-021
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@4.0
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:20.0
+    steps:
+      - checkout
+
+      # SCA-107: CircleCI secret exposure via echo
+      - run:
+          name: Display configuration
+          command: |
+            echo "Circle Token: $CIRCLE_TOKEN"
+            echo "API key: $CIRCLECI_API_TOKEN"
+
+      # SCA-107: Curl with CIRCLE_TOKEN
+      - run:
+          name: Trigger downstream
+          command: |
+            curl -X POST "https://circleci.com/api/v2/project/gh/org/repo/pipeline" \
+              -H "Circle-Token: $CIRCLE_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{"branch": "main"}'
+
+      # SCA-021: CircleCI security incident patterns
+      - run:
+          name: Access secrets
+          command: |
+            echo "CIRCLECI token value: $CIRCLE_TOKEN"
+
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: Deploy to production
+          command: ./deploy.sh
+
+workflows:
+  build-and-deploy:
+    jobs:
+      - build:
+          # SCA-107: Production context exposure
+          context: production
+      - deploy:
+          requires:
+            - build
+          context: production

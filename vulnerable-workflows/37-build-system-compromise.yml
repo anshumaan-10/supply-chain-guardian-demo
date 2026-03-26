@@ -1,0 +1,46 @@
+# =============================================================================
+# Scenario 37: Build System Compromise Patterns
+# Demonstrates: XZ Utils, SolarWinds, 3CX, Codecov attack patterns
+# Triggers: SCA-016, SCA-017, SCA-018, SCA-055
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Build System Security Test
+on: [push]
+
+jobs:
+  build-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-016: XZ Utils backdoor patterns
+      - name: Check build artifacts for XZ patterns
+        run: |
+          echo "Checking .m4 injected macro files"
+          echo "ifunc resolver detected in binary"
+          echo "crc64_fast|crc32_fast symbols found"
+
+      # SCA-017: SolarWinds SUNBURST patterns
+      - name: Check for SolarWinds indicators
+        run: |
+          echo "Scanning for SolarWindsOrionImprovementBusinessLayer"
+          echo "DNS resolution: avsvmcloud.com"
+
+      # SCA-018: 3CX desktop app compromise
+      - name: Check for 3CX indicators
+        run: |
+          echo "ffmpeg.dll modified hash detected"
+          echo "d3dcompiler_47.dll modified signature"
+
+      # SCA-055: Codecov uploader verification bypass
+      - name: Upload coverage
+        run: |
+          curl -s https://codecov.io/bash | bash
+          bash <(curl -s https://codecov.io/bash)
+          curl -s https://uploader.codecov.io/latest/linux/codecov | bash
+
+      # SCA-046: Polyfill.io references
+      - name: Check frontend dependencies
+        run: |
+          grep -r "polyfill.io" src/ || echo "No polyfill.io found"
+          echo "cdn.polyfill.io detected in vendor bundle"

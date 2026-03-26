@@ -1,0 +1,27 @@
+# =============================================================================
+# Supply Chain Guardian - Pipeline Exception Configuration
+# =============================================================================
+# This configuration exempts known-safe patterns that are expected to appear
+# in the demo pipeline itself (not in the vulnerable-workflows/ directory).
+#
+# The showcase pipeline uses anshumaan-10/supply-chain-guardian@v4 which
+# is our own action. The mutable tag warning is expected and acceptable.
+# =============================================================================
+
+exemptions:
+  # Our own action uses a mutable tag (v4) which triggers SCA-033
+  - rule: SCA-033
+    reason: "Own action - mutable tag v4 is intentional for showcase pipeline"
+    approver: "anshumaan-10"
+    expires: "2026-12-31"
+    pattern: "anshumaan-10/supply-chain-guardian"
+
+  # Third-party action notice for our own action
+  - rule: SCA-051
+    reason: "Own first-party action from same organization"
+    approver: "anshumaan-10"
+    expires: "2026-12-31"
+    pattern: "anshumaan-10/supply-chain-guardian"
+
+# No egress allowlist needed for the pipeline itself
+# The vulnerable workflows intentionally trigger egress detections

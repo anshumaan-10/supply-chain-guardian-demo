@@ -1,0 +1,69 @@
+# =============================================================================
+# Scenario 29: Dependency Confusion and Typosquatting
+# Demonstrates: Private registry confusion, typosquatted package names
+# Triggers: SCA-019, SCA-020, SCA-043, SCA-047, SCA-057
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Dependency Installation
+on: [push]
+
+jobs:
+  install-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-019: Dependency confusion via --extra-index-url
+      - name: Install Python dependencies
+        run: |
+          pip install --extra-index-url https://pypi.org/simple/ internal-company-package
+          pip install --extra-index-url https://pypi.example.com/simple/ company-analytics
+
+      # SCA-019: npm registry confusion via .npmrc
+      - name: Configure npm registry
+        run: |
+          echo "registry=https://npm.internal.company.com/" > .npmrc
+          echo "@company:registry=https://npm.internal.company.com/" >> .npmrc
+          npm install
+
+      # SCA-020: PyPI typosquatted packages
+      - name: Install analysis tools
+        run: |
+          pip install reqeusts
+          pip install python-dateutils
+          pip install beautifulsoup
+
+      # SCA-043: npm typosquatted packages
+      - name: Install npm utilities
+        run: |
+          npm install crossenv
+          npm install cross-env.js
+          npm install lodahs
+          npm install expresss
+
+      # SCA-047: PyTorch nightly confusion
+      - name: Install ML dependencies
+        run: |
+          pip install torchtriton
+          pip install --extra-index-url https://download.pytorch.org/whl/nightly torch
+
+      # SCA-057: MavenGate abandoned namespace hijacking
+      - name: Build Java dependencies
+        run: |
+          cat > build.gradle << 'EOF'
+          dependencies {
+              implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+              implementation 'org.abandoned-group:utility-lib:1.0.0'
+          }
+          EOF
+          cat > pom.xml << 'EOF'
+          <project>
+            <dependencies>
+              <dependency>
+                <groupId>com.abandoned-namespace</groupId>
+                <artifactId>common-utils</artifactId>
+                <version>2.0.0</version>
+              </dependency>
+            </dependencies>
+          </project>
+          EOF

@@ -23,20 +23,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ⚠️ WILDCARD AUDIENCE: Token accepted by any audience
+      # WILDCARD AUDIENCE: Token accepted by any audience
       - name: Get OIDC token
         run: |
           TOKEN=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=*" -s | jq -r '.value')
           echo "OIDC_TOKEN=$TOKEN" >> $GITHUB_ENV
 
-      # ⚠️ TOKEN LOGGED: OIDC token printed to workflow logs
+      # TOKEN LOGGED: OIDC token printed to workflow logs
       - name: Debug token
         run: |
           echo "Token: $OIDC_TOKEN"
           echo "$OIDC_TOKEN" | base64 -d | jq .
 
-      # ⚠️ SCOPE ESCALATION: Using token for unrelated service
+      # SCOPE ESCALATION: Using token for unrelated service
       - name: Deploy to AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:

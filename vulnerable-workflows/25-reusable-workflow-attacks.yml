@@ -1,0 +1,56 @@
+# =============================================================================
+# Scenario 25: Reusable Workflow Attack Vectors
+# Demonstrates: Mutable refs, secret inheritance, injection via inputs, write-all
+# Triggers: SCA-084, SCA-085, SCA-086, SCA-087, SCA-088, SCA-089, SCA-090
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Reusable Workflow Consumer
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  # SCA-084: Reusable workflow with mutable ref
+  deploy-staging:
+    uses: org-name/shared-workflows/.github/workflows/deploy.yml@main
+    # SCA-086: All secrets inherited
+    secrets: inherit
+
+  # SCA-085: Reusable workflow from external organization
+  security-scan:
+    uses: external-security-org/scanners/.github/workflows/sast.yml@v2
+    secrets: inherit
+    with:
+      target: ${{ github.repository }}
+
+  # SCA-087: Excessive secrets passed individually
+  build-and-publish:
+    uses: org-name/shared-workflows/.github/workflows/build.yml@main
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+      AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+
+  # SCA-090: Reusable workflow input used in run block
+  process-input:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Process deployment target
+        run: |
+          echo "Deploying to: ${{ inputs.environment }}"
+          bash -c "${{ inputs.deploy_command }}"
+
+  # SCA-089: Reusable workflow with write-all permissions
+  elevated-workflow:
+    uses: org-name/shared-workflows/.github/workflows/release.yml@main
+    permissions: write-all
+    secrets: inherit

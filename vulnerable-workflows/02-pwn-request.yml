@@ -23,12 +23,12 @@ jobs:
   auto-review:
     runs-on: ubuntu-latest
     steps:
-      # ⚠️ PWN REQUEST: Checking out untrusted PR code with write permissions
+      # PWN REQUEST: Checking out untrusted PR code with write permissions
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      # ⚠️ SCRIPT INJECTION: Untrusted PR title injected into shell command
+      # SCRIPT INJECTION: Untrusted PR title injected into shell command
       - name: Validate PR title
         run: |
           echo "Checking PR: ${{ github.event.pull_request.title }}"
@@ -36,7 +36,7 @@ jobs:
             echo "Valid PR title"
           fi
 
-      # ⚠️ ENV INJECTION: Untrusted data written to GITHUB_ENV
+      # ENV INJECTION: Untrusted data written to GITHUB_ENV
       - name: Set metadata
         run: |
           echo "PR_BODY=${{ github.event.pull_request.body }}" >> $GITHUB_ENV

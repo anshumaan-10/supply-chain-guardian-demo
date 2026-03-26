@@ -24,16 +24,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ⚠️ COMPROMISED: This exact commit SHA was part of the tj-actions attack
+      # COMPROMISED: This exact commit SHA was part of the tj-actions attack
       - name: Get changed files
         uses: tj-actions/changed-files@ae82ed004850e9bfa8b2089b109a1e27e0eee893
         id: changed
 
-      # ⚠️ COMPROMISED: Using reviewdog with a known-bad version
+      # COMPROMISED: Using reviewdog with a known-bad version
       - name: Run linter
         uses: reviewdog/action-eslint@fff29c5
 
-      # ⚠️ MUTABLE TAG: Using unpinned @v3 tag that can be force-pushed
+      # MUTABLE TAG: Using unpinned @v3 tag that can be force-pushed
       - name: Cache dependencies
         uses: actions/cache@v3
 

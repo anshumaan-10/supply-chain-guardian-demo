@@ -1,0 +1,60 @@
+# =============================================================================
+# Scenario 24: Output and Environment Injection Attacks
+# Demonstrates: GITHUB_ENV injection, GITHUB_OUTPUT injection, GITHUB_PATH
+# Triggers: SCA-027, SCA-045, SCA-004
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Dynamic Configuration Pipeline
+on:
+  issues:
+    types: [opened, edited]
+  pull_request_target:
+    types: [opened]
+
+permissions: write-all
+
+jobs:
+  process-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-027: GITHUB_ENV injection via user-controlled input
+      - name: Set environment from issue
+        run: |
+          echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
+          echo "PR_BODY=${{ github.event.pull_request.body }}" >> $GITHUB_ENV
+          echo "${{ github.head_ref }}" >> $GITHUB_PATH
+
+      # SCA-045: GITHUB_OUTPUT injection
+      - name: Set outputs from user input
+        id: config
+        run: |
+          echo "title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+          echo "branch=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+
+      # SCA-004: actions/github-script with injected context
+      - name: Auto-label based on title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `${{ github.event.issue.title }}`;
+            const body = `${{ github.event.pull_request.body }}`;
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [title.split(':')[0]]
+            });
+
+      # SCA-026: Script injection via issue bodies
+      - name: Process PR description
+        run: |
+          echo "Processing: ${{ github.event.pull_request.body }}"
+          echo "Author: ${{ github.event.pull_request.user.login }}"
+
+      # SCA-045: Output injection in follow-up step
+      - name: Use injected outputs
+        run: |
+          echo "Config title: ${{ steps.config.outputs.title }}"
+          echo "Config branch: ${{ steps.config.outputs.branch }}"

@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ⚠️ BROAD RESTORE KEY: Allows any branch to restore any other branch's cache
+      # BROAD RESTORE KEY: Allows any branch to restore any other branch's cache
       - name: Restore npm cache
         uses: actions/cache@v3
         with:
@@ -29,7 +29,7 @@ jobs:
             npm-${{ runner.os }}-
             npm-
 
-      # ⚠️ CROSS-BRANCH CACHE: Feature branches can poison main branch cache
+      # CROSS-BRANCH CACHE: Feature branches can poison main branch cache
       - name: Restore build cache
         uses: actions/cache@v3
         with:

@@ -1,0 +1,51 @@
+# =============================================================================
+# Scenario 30: Azure DevOps Pipeline Secret Exposure
+# Demonstrates: Azure DevOps credential leaks, secret logging, token abuse
+# Triggers: SCA-108
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: production-secrets
+  - name: isProduction
+    value: true
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildApp
+        steps:
+          # SCA-108: Azure DevOps secret exposure via echo
+          - script: |
+              echo "Access Token: $(System.AccessToken)"
+              echo "Secret value: $(secret.DeployKey)"
+              echo "Registry password: $(secret.RegistryPassword)"
+            displayName: 'Display build configuration'
+
+          # SCA-108: Curl with System.AccessToken
+          - script: |
+              curl -H "Authorization: Bearer $(System.AccessToken)" \
+                https://dev.azure.com/org/project/_apis/git/repositories
+              curl -H "Authorization: $(secret.ApiKey)" \
+                https://api.external-service.com/deploy
+            displayName: 'Trigger downstream pipeline'
+
+  - stage: Deploy
+    jobs:
+      - deployment: Production
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "Deploying with token: $(System.AccessToken)"
+                  displayName: 'Deploy to production'

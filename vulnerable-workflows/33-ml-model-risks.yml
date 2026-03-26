@@ -1,0 +1,37 @@
+# =============================================================================
+# Scenario 33: ML Model Loading Risks
+# Demonstrates: Pickle deserialization, model loading from untrusted sources
+# Triggers: SCA-053
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: ML Model Pipeline
+on: [push]
+
+jobs:
+  load-models:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SCA-053: HuggingFace model loading risks
+      - name: Load pretrained models
+        run: |
+          python3 -c "
+          import pickle
+          import torch
+          import joblib
+
+          # Dangerous: pickle.load from untrusted source
+          with open('model.pkl', 'rb') as f:
+              model = pickle.load(f)
+
+          # Dangerous: torch.load from untrusted source
+          model2 = torch.load('weights.pt')
+
+          # Dangerous: joblib.load from untrusted source
+          pipeline = joblib.load('pipeline.joblib')
+
+          # Dangerous: from_pretrained from untrusted hub
+          from transformers import AutoModel
+          model3 = AutoModel.from_pretrained('malicious-user/backdoored-model')
+          "

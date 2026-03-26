@@ -1,0 +1,48 @@
+# =============================================================================
+# Scenario 36: Additional Compromised npm Packages
+# Demonstrates: More known malicious packages from recent supply chain attacks
+# Triggers: SCA-013, SCA-014, SCA-029, SCA-030, SCA-031, SCA-041, SCA-048,
+#           SCA-052, SCA-102, SCA-103, SCA-104
+# INTENTIONALLY VULNERABLE - DO NOT USE IN PRODUCTION
+# =============================================================================
+name: Frontend Application Build
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          npm install @lottiefiles/lottie-player@2.0.5
+          npm install @rspack/core@1.1.8
+          npm install eslint-scope@3.7.2
+          npm install @ledgerhq/connect-kit@1.1.6
+          npm install @ledgerhq/connect-kit@1.1.7
+          npm install es5-ext@0.10.54
+          npm install es5-ext@0.10.55
+          npm install eslint-config-prettier@9.1.1
+
+      # SCA-032: Cryptominer package patterns
+      - name: Install build utilities
+        run: |
+          echo "xmrig --url stratum+tcp://pool.minexmr.com:4444"
+          echo "mining: moneroocean.stream pool connected"
+          echo "hashrate: 500 H/s cryptonight"
+          echo "coinhive loaded successfully"
+
+      # SCA-102: CanisterWorm npm worm patterns
+      - name: Configure publishing
+        run: |
+          npm publish --access public
+          npm token create
+          cat .npmrc
+
+      # SCA-103: Shai-Hulud worm patterns
+      - name: Post-install scripts
+        run: |
+          node setup_bun.js
+          node bun_environment.js
+          node bundle.js
