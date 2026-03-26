@@ -1,0 +1,45 @@
+# ============================================================================
+# SCENARIO 09: Container Escape & Docker Supply Chain Attack
+# ============================================================================
+# This workflow uses unpinned Docker images, --privileged mode, mounts the
+# Docker socket, and passes secrets via build args.
+#
+# SCG Detection: Container Security Scanner (SCA-086 to SCA-097)
+# Expected Severity: CRITICAL
+# ============================================================================
+
+name: "Docker Build (VULNERABLE)"
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ⚠️ UNPINNED IMAGE: No digest, mutable tag
+      - name: Build application
+        run: |
+          docker build -t myapp:latest .
+
+      # ⚠️ PRIVILEGED MODE: Container can escape to host
+      - name: Run integration tests
+        run: |
+          docker run --privileged myapp:latest npm test
+
+      # ⚠️ DOCKER SOCKET MOUNT: Container can control host Docker daemon
+      - name: Build nested container
+        run: |
+          docker run -v /var/run/docker.sock:/var/run/docker.sock myapp:latest docker ps
+
+      # ⚠️ SECRET IN BUILD ARG: Visible in image layers
+      - name: Build with creds
+        run: |
+          docker build --build-arg DB_PASSWORD=${{ secrets.DB_PASSWORD }} -t myapp:prod .
+
+      # ⚠️ UNTRUSTED BASE IMAGE
+      - name: From untrusted registry
+        run: |
+          docker pull randomuser123/nodejs-base:latest
+          docker run randomuser123/nodejs-base:latest node app.js

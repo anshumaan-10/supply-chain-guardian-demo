@@ -1,0 +1,27 @@
+# ============================================================================
+# SCENARIO 07: Dependency Compromise (Known Malicious Packages)
+# ============================================================================
+# This package.json includes known compromised npm packages that were
+# used in real supply chain attacks (event-stream, ua-parser-js, etc.)
+#
+# SCG Detection: Dependency Integrity Scanner (SCA-049 to SCA-068)
+# Expected Severity: CRITICAL
+# ============================================================================
+{
+  "name": "vulnerable-demo-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "event-stream": "3.3.6",
+    "ua-parser-js": "0.7.29",
+    "coa": "2.0.3",
+    "rc": "1.2.9",
+    "colors": "1.4.1",
+    "node-ipc": "10.1.1",
+    "faker": "6.6.6",
+    "flatmap-stream": "0.1.1"
+  },
+  "devDependencies": {
+    "lodash": "4.17.20",
+    "minimist": "1.2.5"
+  }
+}

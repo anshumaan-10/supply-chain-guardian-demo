@@ -1,0 +1,15 @@
+# ============================================================================
+# SCENARIO 08: Typosquatting Packages
+# ============================================================================
+# requirements.txt with packages that are typosquats of popular packages.
+# Attackers register similar package names to trick developers.
+#
+# SCG Detection: Typosquatting Scanner (Dynamic Levenshtein + known list)
+# Expected Severity: HIGH
+# ============================================================================
+reqeusts==2.31.0
+beautiflsoup4==4.12.3
+flaskk==3.0.0
+djangoo==5.0.1
+numpyy==1.26.0
+pandass==2.2.0

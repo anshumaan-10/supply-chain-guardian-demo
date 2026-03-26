@@ -1,0 +1,30 @@
+# ============================================================================
+# SCENARIO 12: Reusable Workflow Trust Boundary Violation
+# ============================================================================
+# This workflow calls reusable workflows from untrusted external orgs
+# with mutable refs and inherits all secrets.
+#
+# SCG Detection: Reusable Workflow Trust Scanner
+# Expected Severity: HIGH
+# ============================================================================
+
+name: "CI with Reusable Workflows (VULNERABLE)"
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # ⚠️ EXTERNAL ORG: Calling reusable workflow from untrusted organization
+  security-scan:
+    uses: random-external-org/shared-workflows/.github/workflows/scan.yml@main
+    secrets: inherit  # ⚠️ SECRET INHERITANCE: All secrets passed to external workflow
+
+  # ⚠️ MUTABLE REF: Using branch ref instead of SHA-pinned
+  deploy:
+    needs: security-scan
+    uses: another-org/deploy-workflows/.github/workflows/deploy.yml@develop
+    with:
+      environment: production
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

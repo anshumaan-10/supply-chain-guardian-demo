@@ -1,0 +1,545 @@
+# =============================================================================
+#  Supply Chain Guardian — Interactive Showcase Pipeline
+#  Copyright (c) 2025-2026 Anshumaan Singh. All rights reserved.
+#
+#  This pipeline demonstrates 20 real-world attack scenarios and how
+#  Supply Chain Guardian (SCG) detects, reports, and blocks each one.
+#
+#  🔗 Tool:  https://github.com/anshumaan-10/supply-chain-guardian
+#  🔗 Marketplace: https://github.com/marketplace/actions/supply-chain-guardian
+# =============================================================================
+
+name: "🛡️ SCG Showcase — 20 Attack Scenarios"
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      scan-mode:
+        description: 'Scan depth'
+        required: false
+        default: 'deep'
+        type: choice
+        options:
+          - quick
+          - standard
+          - deep
+          - paranoid
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  JOB 1: Quick Overview Scan (fast feedback, ~10s)
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  quick-scan:
+    name: "⚡ Step 1 — Quick Scan (Signatures Only)"
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.scan.outputs.scan-status }}
+      total: ${{ steps.scan.outputs.total-findings }}
+      critical: ${{ steps.scan.outputs.critical-findings }}
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: "📋 Display scan configuration"
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  Supply Chain Guardian — Showcase Pipeline                  ║"
+          echo "║  Mode: QUICK (signatures only, ~10s)                       ║"
+          echo "║  Repository: ${{ github.repository }}                       ║"
+          echo "║  Commit: ${{ github.sha }}                                 ║"
+          echo "║  Trigger: ${{ github.event_name }}                         ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+
+      - name: "🛡️ Run SCG Quick Scan"
+        id: scan
+        uses: anshumaan-10/supply-chain-guardian@v4
+        with:
+          scan-mode: quick
+          fail-on-severity: critical
+          sarif-output: 'true'
+          json-output: supply-chain-guardian-report.json
+          table-output: 'true'
+          verbose: 'true'
+        continue-on-error: true
+
+      - name: "📊 Quick scan results"
+        if: always()
+        run: |
+          echo "┌─────────────────────────────────────────────────┐"
+          echo "│  Quick Scan Results                             │"
+          echo "├─────────────────────────────────────────────────┤"
+          echo "│  Status:   ${{ steps.scan.outputs.scan-status }}           │"
+          echo "│  Total:    ${{ steps.scan.outputs.total-findings }}        │"
+          echo "│  Critical: ${{ steps.scan.outputs.critical-findings }}     │"
+          echo "│  High:     ${{ steps.scan.outputs.high-findings }}         │"
+          echo "│  Medium:   ${{ steps.scan.outputs.medium-findings }}       │"
+          echo "│  Low:      ${{ steps.scan.outputs.low-findings }}          │"
+          echo "└─────────────────────────────────────────────────┘"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  JOB 2: Deep Scan with Binary Analysis
+  # ─────────────────────────────────────────────────────────────────────────
+  deep-scan:
+    name: "🔍 Step 2 — Deep Scan (All 17 Scanners + Binary)"
+    runs-on: ubuntu-latest
+    needs: quick-scan
+    outputs:
+      status: ${{ steps.scan.outputs.scan-status }}
+      total: ${{ steps.scan.outputs.total-findings }}
+      exempted: ${{ steps.scan.outputs.exempted-findings }}
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: "📋 Display deep scan configuration"
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  Deep Scan — 17 Scanners + Binary Analysis                 ║"
+          echo "║  110+ attack signatures | 80+ behavioral indicators        ║"
+          echo "║  Binary analysis: ELF/PE/Mach-O detection                  ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+
+      - name: "🛡️ Run SCG Deep Scan"
+        id: scan
+        uses: anshumaan-10/supply-chain-guardian@v4
+        with:
+          scan-mode: deep
+          fail-on-severity: critical
+          scan-binaries: 'true'
+          html-output: 'true'
+          html-output-path: 'supply-chain-guardian-report.html'
+          sarif-output: 'true'
+          json-output: supply-chain-guardian-report.json
+          table-output: 'true'
+          verbose: 'true'
+        continue-on-error: true
+
+      - name: "📊 Deep scan summary"
+        if: always()
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  DEEP SCAN COMPLETE                                        ║"
+          echo "╠══════════════════════════════════════════════════════════════╣"
+          echo "║  Status:        ${{ steps.scan.outputs.scan-status }}"
+          echo "║  Total findings: ${{ steps.scan.outputs.total-findings }}"
+          echo "║  Critical:       ${{ steps.scan.outputs.critical-findings }}"
+          echo "║  High:           ${{ steps.scan.outputs.high-findings }}"
+          echo "║  Medium:         ${{ steps.scan.outputs.medium-findings }}"
+          echo "║  Low:            ${{ steps.scan.outputs.low-findings }}"
+          echo "║  Exempted:       ${{ steps.scan.outputs.exempted-findings }}"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+
+      - name: "📂 Upload HTML report artifact"
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: scg-html-report
+          path: supply-chain-guardian-report.html
+          retention-days: 90
+
+      - name: "📂 Upload JSON report artifact"
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scg-json-report
+          path: supply-chain-guardian-report.json
+          retention-days: 90
+
+      - name: "📂 Upload SARIF artifact"
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scg-sarif-report
+          path: supply-chain-guardian.sarif
+          retention-days: 90
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  JOB 3: Runtime Monitor — Split Mode Demo
+  # ─────────────────────────────────────────────────────────────────────────
+  runtime-monitor:
+    name: "🔄 Step 3 — Runtime Monitor (Split Mode)"
+    runs-on: ubuntu-latest
+    needs: quick-scan
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: "📋 Runtime monitor explanation"
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  RUNTIME MONITOR — SPLIT MODE DEMO                         ║"
+          echo "║                                                            ║"
+          echo "║  Timeline:                                                 ║"
+          echo "║    t=0s   monitor-start  → daemon begins watching          ║"
+          echo "║    t=5s   npm ci         → monitor watches postinstall     ║"
+          echo "║    t=30s  build          → monitor watches for drops       ║"
+          echo "║    t=60s  scan           → collects all daemon findings    ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+
+      - name: "🛡️ SCG — Start Runtime Monitor"
+        uses: anshumaan-10/supply-chain-guardian@v4
+        with:
+          mode: monitor-start
+          runtime-monitor-interval: '3'
+
+      - name: "📦 Simulate build — npm install"
+        run: |
+          echo '{"name":"demo","version":"1.0.0","scripts":{"test":"echo ok"}}' > package.json
+          echo "Simulating npm install..."
+          sleep 5
+
+      - name: "🔨 Simulate build — compile"
+        run: |
+          echo "Simulating build process..."
+          mkdir -p dist
+          echo "console.log('hello');" > dist/index.js
+          sleep 3
+
+      - name: "🧪 Simulate tests"
+        run: |
+          echo "Running unit tests..."
+          echo "All 42 tests passed ✓"
+          sleep 2
+
+      - name: "🛡️ SCG — Full Scan (collect runtime findings)"
+        id: scan
+        uses: anshumaan-10/supply-chain-guardian@v4
+        with:
+          mode: scan
+          scan-mode: standard
+          fail-on-severity: critical
+          scan-runtime: 'true'
+          table-output: 'true'
+          verbose: 'true'
+        continue-on-error: true
+
+      - name: "📊 Runtime scan results"
+        if: always()
+        run: |
+          echo "Runtime monitor findings collected alongside static scan."
+          echo "Status: ${{ steps.scan.outputs.scan-status }}"
+          echo "Total:  ${{ steps.scan.outputs.total-findings }}"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  JOB 4: Exception Engine Demo
+  # ─────────────────────────────────────────────────────────────────────────
+  exception-engine:
+    name: "🔧 Step 4 — Exception Engine (Exemptions)"
+    runs-on: ubuntu-latest
+    needs: quick-scan
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: "📋 Exception engine explanation"
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  EXCEPTION ENGINE DEMO                                     ║"
+          echo "║                                                            ║"
+          echo "║  Three-layer exemption system:                             ║"
+          echo "║    1. Inline: # scg-ignore:SCA-017                        ║"
+          echo "║    2. Repo-level: .scg-config.yml                         ║"
+          echo "║    3. Central: org-wide exceptions file                    ║"
+          echo "║                                                            ║"
+          echo "║  Exempted findings stay in the report for audit trail.     ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+
+      - name: "📝 Create .scg-config.yml for this scan"
+        run: |
+          cp vulnerable-workflows/18-scg-config.yml .scg-config.yml
+          echo ""
+          echo "── Exception config loaded ──"
+          cat .scg-config.yml
+
+      - name: "🛡️ Run SCG with Exceptions"
+        id: scan
+        uses: anshumaan-10/supply-chain-guardian@v4
+        with:
+          scan-mode: standard
+          fail-on-severity: critical
+          table-output: 'true'
+          json-output: supply-chain-guardian-report.json
+          verbose: 'true'
+        continue-on-error: true
+
+      - name: "📊 Exception engine results"
+        if: always()
+        run: |
+          echo "┌─────────────────────────────────────────────────┐"
+          echo "│  Exempted findings: ${{ steps.scan.outputs.exempted-findings }}  │"
+          echo "│  (Still in reports for compliance audit)        │"
+          echo "│  Active findings:  ${{ steps.scan.outputs.total-findings }}  │"
+          echo "└─────────────────────────────────────────────────┘"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  JOB 5: Paranoid Mode — Maximum Detection
+  # ─────────────────────────────────────────────────────────────────────────
+  paranoid-scan:
+    name: "🔴 Step 5 — Paranoid Mode (Maximum Detection)"
+    runs-on: ubuntu-latest
+    needs: [deep-scan, runtime-monitor, exception-engine]
+    outputs:
+      status: ${{ steps.scan.outputs.scan-status }}
+      total: ${{ steps.scan.outputs.total-findings }}
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: "📋 Paranoid mode explanation"
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  🔴 PARANOID MODE — MAXIMUM DETECTION                      ║"
+          echo "║                                                            ║"
+          echo "║  All 17 scanners active                                    ║"
+          echo "║  110+ signature patterns                                   ║"
+          echo "║  80+ behavioral indicators                                 ║"
+          echo "║  Binary analysis: /tmp, /dev/shm sweep                     ║"
+          echo "║  Egress allowlisting active                                ║"
+          echo "║  Full cross-platform CI/CD scan                            ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+
+      - name: "🛡️ Run SCG Paranoid Scan"
+        id: scan
+        uses: anshumaan-10/supply-chain-guardian@v4
+        with:
+          scan-mode: paranoid
+          fail-on-severity: medium
+          scan-binaries: 'true'
+          html-output: 'true'
+          html-output-path: 'paranoid-report.html'
+          sarif-output: 'true'
+          json-output: paranoid-report.json
+          table-output: 'true'
+          verbose: 'true'
+        continue-on-error: true
+
+      - name: "📊 Paranoid scan summary"
+        if: always()
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  🔴 PARANOID SCAN COMPLETE                                 ║"
+          echo "╠══════════════════════════════════════════════════════════════╣"
+          echo "║  Status:   ${{ steps.scan.outputs.scan-status }}"
+          echo "║  Total:    ${{ steps.scan.outputs.total-findings }}"
+          echo "║  Critical: ${{ steps.scan.outputs.critical-findings }}"
+          echo "║  High:     ${{ steps.scan.outputs.high-findings }}"
+          echo "║  Medium:   ${{ steps.scan.outputs.medium-findings }}"
+          echo "║  Low:      ${{ steps.scan.outputs.low-findings }}"
+          echo "║  Exempted: ${{ steps.scan.outputs.exempted-findings }}"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+
+      - name: "📂 Upload paranoid reports"
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scg-paranoid-report
+          path: |
+            paranoid-report.html
+            paranoid-report.json
+            supply-chain-guardian.sarif
+          retention-days: 90
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  JOB 6: Upload SARIF to GitHub Security Tab
+  # ─────────────────────────────────────────────────────────────────────────
+  upload-sarif:
+    name: "🔒 Step 6 — Upload to GitHub Security"
+    runs-on: ubuntu-latest
+    needs: deep-scan
+    if: always()
+    permissions:
+      security-events: write
+    steps:
+      - name: "📥 Download SARIF artifact"
+        uses: actions/download-artifact@v4
+        with:
+          name: scg-sarif-report
+
+      - name: "🔒 Upload SARIF to GitHub Code Scanning"
+        uses: github/codeql-action/upload-sarif@ebcb5b36ded6beda4ceefea6a8bc4cc885255bb3
+        with:
+          sarif_file: supply-chain-guardian.sarif
+        continue-on-error: true
+
+      - name: "📊 SARIF upload confirmation"
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  ✅ SARIF uploaded to GitHub Advanced Security              ║"
+          echo "║                                                            ║"
+          echo "║  View findings:                                            ║"
+          echo "║  → Repository > Security > Code Scanning Alerts            ║"
+          echo "║  → Findings appear with inline annotations on exact lines  ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  JOB 7: Deploy HTML Report to GitHub Pages
+  # ─────────────────────────────────────────────────────────────────────────
+  deploy-report:
+    name: "🌐 Step 7 — Deploy HTML Report (GitHub Pages)"
+    runs-on: ubuntu-latest
+    needs: [deep-scan, paranoid-scan]
+    if: github.ref == 'refs/heads/main' && always()
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: "📥 Download HTML report"
+        uses: actions/download-artifact@v4
+        with:
+          name: scg-html-report
+          path: public/
+
+      - name: "📥 Download paranoid report"
+        uses: actions/download-artifact@v4
+        with:
+          name: scg-paranoid-report
+          path: public/paranoid/
+        continue-on-error: true
+
+      - name: "📝 Create GitHub Pages index"
+        run: |
+          cat > public/index.html << 'INDEXEOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Supply Chain Guardian — Scan Reports</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; }
+              .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+              h1 { color: #58a6ff; margin-bottom: 0.5rem; font-size: 2rem; }
+              .subtitle { color: #8b949e; margin-bottom: 2rem; }
+              .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; transition: border-color 0.2s; }
+              .card:hover { border-color: #58a6ff; }
+              .card h3 { color: #f0f6fc; margin-bottom: 0.5rem; }
+              .card p { color: #8b949e; font-size: 0.9rem; }
+              .card a { color: #58a6ff; text-decoration: none; font-weight: 600; }
+              .card a:hover { text-decoration: underline; }
+              .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-right: 0.5rem; }
+              .badge-red { background: #da3633; color: #fff; }
+              .badge-blue { background: #1f6feb; color: #fff; }
+              .badge-green { background: #238636; color: #fff; }
+              .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #30363d; color: #484f58; font-size: 0.85rem; text-align: center; }
+              .footer a { color: #58a6ff; text-decoration: none; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>🛡️ Supply Chain Guardian</h1>
+              <p class="subtitle">Interactive scan reports from the showcase pipeline</p>
+
+              <div class="card">
+                <h3>📊 Deep Scan Report</h3>
+                <p>Full scan with all 17 scanners active, binary analysis enabled.</p>
+                <span class="badge badge-blue">17 Scanners</span>
+                <span class="badge badge-red">110+ Patterns</span>
+                <br><br>
+                <a href="supply-chain-guardian-report.html">→ View Deep Scan Report</a>
+              </div>
+
+              <div class="card">
+                <h3>🔴 Paranoid Mode Report</h3>
+                <p>Maximum detection: all scanners + /tmp sweep + max behavioral patterns.</p>
+                <span class="badge badge-red">Paranoid Mode</span>
+                <span class="badge badge-blue">Binary Analysis</span>
+                <br><br>
+                <a href="paranoid/paranoid-report.html">→ View Paranoid Report</a>
+              </div>
+
+              <div class="card">
+                <h3>🔗 Resources</h3>
+                <p>
+                  <a href="https://github.com/anshumaan-10/supply-chain-guardian">Supply Chain Guardian (Source)</a><br>
+                  <a href="https://github.com/marketplace/actions/supply-chain-guardian">GitHub Marketplace</a><br>
+                  <a href="https://github.com/anshumaan-10/supply-chain-guardian-demo">This Demo Repository</a>
+                </p>
+              </div>
+
+              <div class="footer">
+                <p>Supply Chain Guardian v4.0.2 · Created by <a href="https://github.com/anshumaan-10">Anshumaan Singh</a></p>
+                <p>© 2025-2026 Anshumaan Singh. All rights reserved. Licensed under BSL 1.1</p>
+              </div>
+            </div>
+          </body>
+          </html>
+          INDEXEOF
+          echo "Index page created."
+
+      - name: "🚀 Deploy to GitHub Pages"
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          force_orphan: true
+          commit_message: "deploy: SCG scan report"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  JOB 8: Final Summary Dashboard
+  # ─────────────────────────────────────────────────────────────────────────
+  summary:
+    name: "📋 Step 8 — Pipeline Summary"
+    runs-on: ubuntu-latest
+    needs: [quick-scan, deep-scan, runtime-monitor, exception-engine, paranoid-scan, upload-sarif, deploy-report]
+    if: always()
+    steps:
+      - name: "📋 Final pipeline summary"
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════════════════════╗"
+          echo "║                                                                    ║"
+          echo "║   ███████╗ ██████╗ ██████╗     Supply Chain Guardian               ║"
+          echo "║   ██╔════╝██╔════╝██╔════╝     Showcase Pipeline Complete          ║"
+          echo "║   ███████╗██║     ██║  ███╗    v4.0.2                              ║"
+          echo "║   ╚════██║██║     ██║   ██║    By Anshumaan Singh                  ║"
+          echo "║   ███████║╚██████╗╚██████╔╝    github.com/anshumaan-10             ║"
+          echo "║   ╚══════╝ ╚═════╝ ╚═════╝                                        ║"
+          echo "║                                                                    ║"
+          echo "╠══════════════════════════════════════════════════════════════════════╣"
+          echo "║                                                                    ║"
+          echo "║  PIPELINE RESULTS                                                  ║"
+          echo "║  ─────────────────────────────────────────────────────────          ║"
+          echo "║                                                                    ║"
+          echo "║  ⚡ Step 1 — Quick Scan:       ${{ needs.quick-scan.outputs.status }}  ║"
+          echo "║  🔍 Step 2 — Deep Scan:        ${{ needs.deep-scan.outputs.status }}  ║"
+          echo "║  🔄 Step 3 — Runtime Monitor:  Complete                            ║"
+          echo "║  🔧 Step 4 — Exception Engine: Complete                            ║"
+          echo "║  🔴 Step 5 — Paranoid Mode:    ${{ needs.paranoid-scan.outputs.status }}  ║"
+          echo "║  🔒 Step 6 — SARIF Upload:     Complete                            ║"
+          echo "║  🌐 Step 7 — HTML Report:      Deployed to GitHub Pages            ║"
+          echo "║  📋 Step 8 — Summary:          You are here                        ║"
+          echo "║                                                                    ║"
+          echo "║  TOTAL FINDINGS DETECTED: ${{ needs.deep-scan.outputs.total }}                                  ║"
+          echo "║  EXEMPTED:               ${{ needs.deep-scan.outputs.exempted }}                                  ║"
+          echo "║                                                                    ║"
+          echo "║  ARTIFACTS:                                                        ║"
+          echo "║  → scg-html-report         (HTML — browser-viewable)               ║"
+          echo "║  → scg-json-report         (JSON — machine-readable)               ║"
+          echo "║  → scg-sarif-report        (SARIF — GitHub Security tab)           ║"
+          echo "║  → scg-paranoid-report     (Paranoid mode full scan)               ║"
+          echo "║                                                                    ║"
+          echo "║  REPORTS:                                                          ║"
+          echo "║  → GitHub Security tab (Code Scanning Alerts)                      ║"
+          echo "║  → GitHub Pages (HTML reports)                                     ║"
+          echo "║                                                                    ║"
+          echo "╠══════════════════════════════════════════════════════════════════════╣"
+          echo "║                                                                    ║"
+          echo "║  🔗 Tool:        github.com/anshumaan-10/supply-chain-guardian     ║"
+          echo "║  🔗 Marketplace: github.com/marketplace/actions/supply-chain-guardian║"
+          echo "║  📄 License:     BSL 1.1 (free for non-commercial use)             ║"
+          echo "║                                                                    ║"
+          echo "║  © 2025-2026 Anshumaan Singh. All rights reserved.                 ║"
+          echo "║                                                                    ║"
+          echo "╚══════════════════════════════════════════════════════════════════════╝"

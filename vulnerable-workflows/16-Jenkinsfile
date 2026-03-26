@@ -1,0 +1,32 @@
+# ============================================================================
+# SCENARIO 16: Cross-Platform CI/CD Attack Patterns
+# ============================================================================
+# These files contain attack patterns found in other CI/CD platforms
+# (Jenkins, GitLab CI, CircleCI, Azure DevOps). SCG detects these even
+# when they appear in non-GitHub CI configs stored in the same repo.
+#
+# SCG Detection: Cross-Platform CI/CD Scanner
+# Expected Severity: HIGH
+# ============================================================================
+
+# --- Jenkinsfile ---
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                // ⚠️ JENKINS CREDENTIAL THEFT
+                sh '''
+                    cat /var/jenkins_home/secrets/master.key
+                    cat /var/jenkins_home/credentials.xml
+                '''
+            }
+        }
+        stage('Deploy') {
+            steps {
+                // ⚠️ JENKINS SCRIPT CONSOLE ABUSE
+                sh 'curl -X POST http://jenkins:8080/scriptText -d "script=println(new File(\'/etc/passwd\').text)"'
+            }
+        }
+    }
+}

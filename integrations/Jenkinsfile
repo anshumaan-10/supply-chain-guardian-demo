@@ -1,0 +1,105 @@
+// =============================================================================
+//  Supply Chain Guardian — Jenkins Pipeline Integration
+//  Copyright (c) 2025-2026 Anshumaan Singh. All rights reserved.
+//
+//  Declarative pipeline that runs SCG as a pre-build security gate.
+//  Works with any Jenkins 2.x instance with Python 3.9+ available.
+// =============================================================================
+
+pipeline {
+    agent any
+
+    environment {
+        SCG_VERSION = 'v4'
+        SCG_REPO    = 'https://github.com/anshumaan-10/supply-chain-guardian.git'
+        SCAN_MODE   = 'deep'
+        FAIL_LEVEL  = 'high'
+    }
+
+    options {
+        timeout(time: 15, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        ansiColor('xterm')
+    }
+
+    stages {
+        // ── 1. Checkout ────────────────────────────────────────────────
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        // ── 2. Supply Chain Scan ───────────────────────────────────────
+        stage('Supply Chain Scan') {
+            steps {
+                echo '''
+╔══════════════════════════════════════════════════════════════╗
+║  Supply Chain Guardian — Jenkins Integration                ║
+║  Pre-build security gate for supply chain attacks           ║
+╚══════════════════════════════════════════════════════════════╝
+'''
+                sh '''
+                    # Clone SCG (shallow, fast)
+                    rm -rf /tmp/scg
+                    git clone --depth 1 --branch ${SCG_VERSION} ${SCG_REPO} /tmp/scg 2>/dev/null || \
+                        git clone --depth 1 ${SCG_REPO} /tmp/scg
+
+                    # Install minimal deps
+                    pip3 install --quiet pyyaml requests tabulate colorama jsonschema semver
+
+                    # Run scan
+                    INPUT_SCAN_MODE=${SCAN_MODE} \
+                    INPUT_FAIL_ON_SEVERITY=${FAIL_LEVEL} \
+                    INPUT_VERBOSE=true \
+                    INPUT_JSON_OUTPUT=scg-report.json \
+                    INPUT_SARIF_OUTPUT=true \
+                    python3 /tmp/scg/src/main.py --workspace "${WORKSPACE}"
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'scg-report.json,supply-chain-guardian.sarif', allowEmptyArchive: true
+                    // Record SARIF in Jenkins warnings-ng plugin (if installed)
+                    recordIssues(tools: [sarif(pattern: 'supply-chain-guardian.sarif')])
+                }
+                failure {
+                    echo '🚨 Supply chain issues detected! Build blocked.'
+                }
+            }
+        }
+
+        // ── 3. Build ──────────────────────────────────────────────────
+        stage('Build') {
+            steps {
+                sh 'npm ci && npm run build'
+            }
+        }
+
+        // ── 4. Test ───────────────────────────────────────────────────
+        stage('Test') {
+            steps {
+                sh 'npm test'
+            }
+        }
+
+        // ── 5. Deploy ─────────────────────────────────────────────────
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo 'Deploying — supply chain verified ✓'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Pipeline passed — supply chain clean'
+        }
+        failure {
+            echo '❌ Pipeline failed — check Supply Chain Scan stage'
+        }
+    }
+}

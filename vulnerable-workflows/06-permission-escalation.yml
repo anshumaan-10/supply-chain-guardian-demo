@@ -1,0 +1,43 @@
+# ============================================================================
+# SCENARIO 06: Permission Escalation (Overly Broad Permissions)
+# ============================================================================
+# This workflow uses write-all permissions at the top level, violating the
+# principle of least privilege. Any compromised step gets full repo access.
+#
+# SCG Detection: Permission Audit Scanner (SCA-075 to SCA-085)
+# Expected Severity: HIGH
+# ============================================================================
+
+name: "CI Pipeline (VULNERABLE)"
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# ⚠️ WRITE-ALL: Every job and step gets full permissions
+permissions: write-all
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    # ⚠️ No job-level permission scope — inherits write-all
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      # ⚠️ OVERPRIVILEGED: Deploy step has contents:write even though it only needs deployments:write
+      - name: Deploy to production
+        run: |
+          echo "Deploying..."

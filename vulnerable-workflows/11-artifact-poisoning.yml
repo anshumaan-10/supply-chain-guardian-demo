@@ -1,0 +1,52 @@
+# ============================================================================
+# SCENARIO 11: Artifact Poisoning (TOCTOU & Unsigned Artifacts)
+# ============================================================================
+# This workflow downloads artifacts without verification, enabling
+# TOCTOU (time-of-check-time-of-use) and artifact poisoning attacks.
+#
+# SCG Detection: Artifact Integrity Scanner
+# Expected Severity: HIGH
+# ============================================================================
+
+name: "Release Pipeline (VULNERABLE)"
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci && npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # ⚠️ UNSIGNED ARTIFACT: Downloaded without checksum verification
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+
+      # ⚠️ TOCTOU: No integrity check between download and use
+      - name: Deploy artifact
+        run: |
+          cd dist/
+          tar -xzf release.tar.gz
+          ./deploy.sh
+
+      # ⚠️ ARTIFACT FROM EXTERNAL SOURCE: No provenance verification
+      - name: Download external binary
+        run: |
+          curl -sL https://github.com/someuser/tool/releases/download/v1.0/tool-linux-amd64 -o /usr/local/bin/tool
+          chmod +x /usr/local/bin/tool
+          tool deploy

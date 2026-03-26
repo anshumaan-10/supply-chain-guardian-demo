@@ -1,0 +1,41 @@
+# ============================================================================
+# SCENARIO 01: Compromised GitHub Action (tj-actions/changed-files attack)
+# ============================================================================
+# This workflow uses a KNOWN COMPROMISED version of tj-actions/changed-files.
+# In March 2025, attackers injected malicious code into this action via a
+# hijacked Reviewdog token, exfiltrating CI secrets to a remote C2 server.
+#
+# SCG Detection: Compromised Actions Scanner (SCA-001 to SCA-010)
+# Expected Severity: CRITICAL
+# ============================================================================
+
+name: "Build & Deploy (VULNERABLE)"
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ⚠️ COMPROMISED: This exact commit SHA was part of the tj-actions attack
+      - name: Get changed files
+        uses: tj-actions/changed-files@ae82ed004850e9bfa8b2089b109a1e27e0eee893
+        id: changed
+
+      # ⚠️ COMPROMISED: Using reviewdog with a known-bad version
+      - name: Run linter
+        uses: reviewdog/action-eslint@fff29c5
+
+      # ⚠️ MUTABLE TAG: Using unpinned @v3 tag that can be force-pushed
+      - name: Cache dependencies
+        uses: actions/cache@v3
+
+      - name: Build
+        run: npm ci && npm run build

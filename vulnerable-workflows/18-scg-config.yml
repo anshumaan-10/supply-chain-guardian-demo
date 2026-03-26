@@ -1,0 +1,43 @@
+# ============================================================================
+# SCENARIO 18: Exception Engine — Exemptions with Audit Trail
+# ============================================================================
+# SCG Exception Config that demonstrates the three-layer exemption system:
+#   1. Inline suppression (# scg-ignore)
+#   2. Repository-level .scg-config.yml
+#   3. Central org-wide config
+#
+# This config exempts specific known findings while keeping the audit trail.
+# ============================================================================
+
+version: "1"
+
+exemptions:
+  # Exemption 1: Known-safe use of ngrok for E2E testing
+  - rule_id: SCA-017
+    reason: "ngrok used exclusively for Playwright E2E preview environments"
+    approved_by: "security-team"
+    expires: "2027-06-01"
+
+  # Exemption 2: Internal registry false positive
+  - rule_id: SCA-019
+    reason: "internal-registry.corp.example.com is a trusted internal endpoint"
+    approved_by: "platform-engineering"
+    expires: "2027-01-01"
+
+  # Exemption 3: Accepted risk for legacy dependency
+  - rule_id: SCA-055
+    reason: "colors@1.4.1 pinned and audited — no postinstall hook present in our lockfile"
+    approved_by: "AppSec lead"
+    expires: "2026-12-01"
+
+egress_allowlist:
+  - "*.internal.corp.example.com"
+  - "artifactory.corp.example.com"
+  - "sonarqube.infra.example.com"
+
+disabled_scanners:
+  - "provenance"    # Team doesn't use SLSA attestation yet
+
+severity_overrides:
+  SCA-042: medium   # Downgrade from high (risk-accepted, tracked in JIRA-1234)
+  SCA-075: low      # write-all on internal-only repo is acceptable
