@@ -10,7 +10,7 @@
 [![CI Pipeline](https://img.shields.io/badge/CI_Jobs-8-orange?style=for-the-badge)](#-showcase-pipeline)
 [![License](https://img.shields.io/badge/License-BSL_1.1-purple?style=for-the-badge)](LICENSE)
 
-**[View Live HTML Report](https://anshumaan-10.github.io/supply-chain-guardian-demo/)** · **[GitHub Marketplace](https://github.com/marketplace/actions/supply-chain-guardian)** · **[Source Code](https://github.com/anshumaan-10/supply-chain-guardian)**
+**[View Live HTML Report](http://www.devsecopswithanshu.com/supply-chain-guardian-demo/)** · **[GitHub Marketplace](https://github.com/marketplace/actions/supply-chain-guardian)** · **[Source Code](https://github.com/anshumaan-10/supply-chain-guardian)**
 
 ---
 
@@ -331,7 +331,7 @@ The [CI pipeline](.github/workflows/showcase-pipeline.yml) runs **8 jobs** demon
 - Downloads all HTML report artifacts
 - Creates a styled landing page with navigation
 - Deploys to GitHub Pages automatically
-- **[View Live Report →](https://anshumaan-10.github.io/supply-chain-guardian-demo/)**
+- **[View Live Report →](http://www.devsecopswithanshu.com/supply-chain-guardian-demo/)**
 
 </details>
 
