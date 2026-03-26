@@ -72,6 +72,7 @@ jobs:
           table-output: 'true'
           verbose: 'true'
           artifact-name: scg-quick-scan
+          extra-scan-paths: vulnerable-workflows
         continue-on-error: true
 
       - name: Print results summary
@@ -129,6 +130,7 @@ jobs:
           table-output: 'true'
           verbose: 'true'
           artifact-name: scg-deep-scan
+          extra-scan-paths: vulnerable-workflows
         continue-on-error: true
 
       - name: Print deep scan results
@@ -236,6 +238,7 @@ jobs:
           verbose: 'true'
           sarif-output: 'false'
           artifact-name: scg-runtime-scan
+          extra-scan-paths: vulnerable-workflows
         continue-on-error: true
 
       - name: Print runtime monitoring results
@@ -293,6 +296,7 @@ jobs:
           verbose: 'true'
           sarif-output: 'false'
           artifact-name: scg-exception-scan
+          extra-scan-paths: vulnerable-workflows
         continue-on-error: true
 
       - name: Print exception engine results
@@ -350,6 +354,7 @@ jobs:
           table-output: 'true'
           verbose: 'true'
           artifact-name: scg-paranoid-audit
+          extra-scan-paths: vulnerable-workflows
         continue-on-error: true
 
       - name: Print paranoid audit results
