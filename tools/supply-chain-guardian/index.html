@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain Guardian - Threat Detection Reports</title>
+<style>
+:root {
+  --bg: #121318;
+  --surface: #1a1b23;
+  --surface-hover: #22232e;
+  --border: #2a2b35;
+  --text: #e0e0e6;
+  --muted: #8b8d9a;
+  --accent: #4f8cff;
+  --accent-dim: rgba(79,140,255,0.12);
+  --critical: #ef4444;
+  --critical-dim: rgba(239,68,68,0.12);
+  --high: #f97316;
+  --high-dim: rgba(249,115,22,0.12);
+  --medium: #eab308;
+  --green: #22c55e;
+  --green-dim: rgba(34,197,94,0.12);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #0f1019 0%, #1a1b2e 50%, #171825 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 3.5rem 2rem 3rem;
+}
+.header-inner { max-width: 960px; margin: 0 auto; }
+.header h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+}
+.header .subtitle {
+  color: var(--muted);
+  font-size: 1.05rem;
+  max-width: 640px;
+  line-height: 1.7;
+}
+.badges { margin-top: 1.25rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.badge-critical { background: var(--critical-dim); color: var(--critical); }
+.badge-high { background: var(--high-dim); color: var(--high); }
+.badge-accent { background: var(--accent-dim); color: var(--accent); }
+.badge-green { background: var(--green-dim); color: var(--green); }
+
+/* Layout */
+.container { max-width: 960px; margin: 0 auto; padding: 2rem; }
+
+/* Stats Grid */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: border-color 0.2s;
+}
+.stat:hover { border-color: var(--accent); }
+.stat-value { font-size: 1.6rem; font-weight: 700; }
+.stat-label { color: var(--muted); font-size: 0.82rem; margin-top: 0.25rem; }
+
+/* Section */
+.section { margin: 2.5rem 0; }
+.section h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+.card:hover { border-color: var(--accent); background: var(--surface-hover); }
+.card h3 { font-size: 1.05rem; margin-bottom: 0.5rem; }
+.card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem; }
+.card-link {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Attack Flow */
+.attack-flow {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2rem 1.5rem;
+  margin: 1rem 0;
+}
+.flow-step {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  position: relative;
+}
+.flow-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 32px;
+  bottom: -10px;
+  width: 2px;
+  background: var(--border);
+}
+.flow-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700;
+  flex-shrink: 0;
+  margin-right: 1rem;
+  margin-top: 1px;
+  position: relative;
+  z-index: 1;
+}
+.flow-num.red { background: var(--critical-dim); color: var(--critical); }
+.flow-num.green { background: var(--green-dim); color: var(--green); }
+.flow-content h4 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+.flow-content p { color: var(--muted); font-size: 0.85rem; margin: 0; }
+
+/* Scanners Grid */
+.scanners-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+.scanner-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.85rem;
+  font-size: 0.85rem;
+  transition: border-color 0.15s;
+}
+.scanner-item:hover { border-color: var(--accent); }
+.scanner-item strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+.scanner-item span { color: var(--muted); }
+
+/* Pipeline Stages */
+.pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+.pipeline-stage {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.pipeline-stage .num {
+  color: var(--accent);
+  font-weight: 700;
+  margin-right: 0.35rem;
+}
+
+/* Footer */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 3rem;
+}
+.footer a { color: var(--accent); }
+.footer p + p { margin-top: 0.4rem; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-inner">
+    <h1>Supply Chain Guardian</h1>
+    <p class="subtitle">Enterprise-grade supply chain security scanner for CI/CD pipelines.
+    Detects compromised dependencies, stolen credentials, network exfiltration, container escape,
+    and 110+ real-world attack patterns across GitHub Actions, GitLab CI, Jenkins, and Azure DevOps.</p>
+    <div class="badges">
+      <span class="badge badge-critical">110+ Attack Patterns</span>
+      <span class="badge badge-accent">17 Scanner Modules</span>
+      <span class="badge badge-high">20 Attack Scenarios</span>
+      <span class="badge badge-green">GitHub Marketplace</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="stat-value" style="color:var(--critical)">110+</div><div class="stat-label">Attack Patterns</div></div>
+    <div class="stat"><div class="stat-value" style="color:var(--accent)">17</div><div class="stat-label">Scanner Modules</div></div>
+    <div class="stat"><div class="stat-value" style="color:var(--high)">37</div><div class="stat-label">Vulnerable Scenarios</div></div>
+    <div class="stat"><div class="stat-value" style="color:var(--green)">8</div><div class="stat-label">Pipeline Stages</div></div>
+  </div>
+
+  <div class="section">
+    <h2>Scan Reports</h2>
+    <div class="card">
+      <h3>Deep Multi-Scanner Analysis</h3>
+      <p>Full scan with all 17 scanner modules, binary analysis, and dependency auditing.
+      Covers workflow security, secret detection, network monitoring, permission auditing,
+      container scanning, OIDC validation, and artifact integrity checks.</p>
+      <span class="badge badge-accent">17 Scanners</span>
+      <span class="badge badge-critical">Binary Analysis</span>
+      <br><br>
+      <a class="card-link" href="/supply-chain-guardian-demo/reports/deep-scan-report.html">View Deep Scan Report</a>
+    </div>
+    <div class="card">
+      <h3>Paranoid Zero-Trust Audit</h3>
+      <p>Maximum detection sensitivity with egress validation, /tmp and /dev/shm sweep,
+      cross-platform CI/CD configuration audit, and strict fail thresholds.
+      The most comprehensive scan mode available.</p>
+      <span class="badge badge-critical">Paranoid Mode</span>
+      <span class="badge badge-high">Zero Trust</span>
+      <br><br>
+      <a class="card-link" href="/supply-chain-guardian-demo/reports/paranoid-audit-report.html">View Paranoid Audit Report</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Pipeline Stages</h2>
+    <p style="color:var(--muted); font-size:0.9rem; margin-bottom:1rem;">
+      The showcase pipeline runs 8 stages to demonstrate each capability of Supply Chain Guardian.
+    </p>
+    <div class="pipeline">
+      <div class="pipeline-stage"><span class="num">1</span>Signature Detection</div>
+<div class="pipeline-stage"><span class="num">2</span>Deep Multi-Scanner Analysis</div>
+<div class="pipeline-stage"><span class="num">3</span>Runtime Behavioral Monitoring</div>
+<div class="pipeline-stage"><span class="num">4</span>Exception Engine</div>
+<div class="pipeline-stage"><span class="num">5</span>Paranoid Zero-Trust Audit</div>
+<div class="pipeline-stage"><span class="num">6</span>Security Tab Integration</div>
+<div class="pipeline-stage"><span class="num">7</span>Report Deployment</div>
+<div class="pipeline-stage"><span class="num">8</span>Pipeline Summary</div>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>How a Supply Chain Attack Works</h2>
+    <div class="attack-flow">
+      <div class="flow-step">
+  <div class="flow-num red">1</div>
+  <div class="flow-content"><h4>Initial Compromise</h4><p>Attacker publishes a typosquatted package (reqeusts instead of requests) or compromises a popular GitHub Action (tj-actions/changed-files).</p></div>
+</div>
+<div class="flow-step">
+  <div class="flow-num red">2</div>
+  <div class="flow-content"><h4>Silent Execution</h4><p>Malicious postinstall script runs during npm install. Obfuscated payload decodes via base64 and executes in the CI runner environment.</p></div>
+</div>
+<div class="flow-step">
+  <div class="flow-num red">3</div>
+  <div class="flow-content"><h4>Credential Theft</h4><p>Payload reads GITHUB_TOKEN, AWS keys, and CI secrets from environment variables. Data exfiltrated via DNS tunneling or HTTPS to attacker C2 server.</p></div>
+</div>
+<div class="flow-step">
+  <div class="flow-num red">4</div>
+  <div class="flow-content"><h4>Lateral Movement</h4><p>Stolen tokens used to access private repositories, modify package releases, and inject backdoors into downstream build artifacts.</p></div>
+</div>
+<div class="flow-step">
+  <div class="flow-num green">5</div>
+  <div class="flow-content"><h4>Supply Chain Guardian Detection</h4><p>SCG identifies the attack at multiple stages: compromised action reference, malicious package in manifest, obfuscated payload, network exfiltration, and runtime behavioral anomaly.</p></div>
+</div>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Scanner Modules</h2>
+    <div class="scanners-grid">
+      <div class="scanner-item"><strong>Signature Scanner</strong><span>110+ known attack patterns</span></div>
+<div class="scanner-item"><strong>Dependency Analyzer</strong><span>Compromised and malicious packages</span></div>
+<div class="scanner-item"><strong>Permission Auditor</strong><span>Least-privilege enforcement</span></div>
+<div class="scanner-item"><strong>Network Monitor</strong><span>Reverse shells, C2 callbacks</span></div>
+<div class="scanner-item"><strong>Secret Detector</strong><span>Hardcoded credentials, API keys</span></div>
+<div class="scanner-item"><strong>Workflow Analyzer</strong><span>Injection, unsafe triggers</span></div>
+<div class="scanner-item"><strong>Cache Inspector</strong><span>Poisoning vectors</span></div>
+<div class="scanner-item"><strong>Container Scanner</strong><span>Image pinning, privilege escalation</span></div>
+<div class="scanner-item"><strong>OIDC Validator</strong><span>Token scope abuse, identity confusion</span></div>
+<div class="scanner-item"><strong>Artifact Auditor</strong><span>Path traversal, overwrite, TOCTOU</span></div>
+<div class="scanner-item"><strong>Binary Analyzer</strong><span>Executable detection, entropy analysis</span></div>
+<div class="scanner-item"><strong>Runtime Monitor</strong><span>Process behavior, file access</span></div>
+<div class="scanner-item"><strong>Egress Controller</strong><span>Unauthorized outbound connections</span></div>
+<div class="scanner-item"><strong>Injection Scanner</strong><span>Script and expression injection</span></div>
+<div class="scanner-item"><strong>CI Config Auditor</strong><span>Jenkins, GitLab, Azure, CircleCI</span></div>
+<div class="scanner-item"><strong>Obfuscation Detector</strong><span>Base64, eval chains, encoded payloads</span></div>
+<div class="scanner-item"><strong>Exception Engine</strong><span>Allowlist and override management</span></div>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Resources</h2>
+    <div class="card">
+      <p style="line-height:2">
+        <a href="https://github.com/anshumaan-10/supply-chain-guardian">Source Code (GitHub)</a><br>
+        <a href="https://github.com/marketplace/actions/supply-chain-guardian">GitHub Marketplace Listing</a><br>
+        <a href="https://github.com/anshumaan-10/supply-chain-guardian-demo">Demo Repository</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Supply Chain Guardian v4 &middot; Built by <a href="https://github.com/anshumaan-10">Anshumaan Singh</a></p>
+    <p><a href="https://github.com/anshumaan-10/supply-chain-guardian">Source</a> &middot;
+    <a href="https://github.com/marketplace/actions/supply-chain-guardian">Marketplace</a> &middot;
+    <a href="https://github.com/anshumaan-10/supply-chain-guardian-demo">Demo</a></p>
+    <p>&copy; 2025-2026 Anshumaan Singh. All rights reserved.</p>
+    <p style="margin-top:0.5rem; font-size:0.8rem;">Last updated: 2026-03-28 09:37 UTC</p>
+  </div>
+</div>
+</body>
+</html>
