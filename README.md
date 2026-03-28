@@ -618,3 +618,17 @@ Any use, reproduction, or distribution of this work must retain the original aut
 [![Star this repo](https://img.shields.io/github/stars/anshumaan-10/supply-chain-guardian-demo?style=social)](https://github.com/anshumaan-10/supply-chain-guardian-demo)
 
 </div>
+
+## Overview
+
+This repository contains project code and supporting assets. It is maintained actively with periodic updates.
+
+## Getting Started
+
+1. Clone this repository.
+2. Install dependencies as documented in the project files.
+3. Run/build using the project-specific commands.
+
+## Contribution Guidelines
+
+Please open an issue for major changes and submit focused pull requests with clear descriptions.
