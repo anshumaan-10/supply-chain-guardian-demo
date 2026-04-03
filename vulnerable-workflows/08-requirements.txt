@@ -15,7 +15,7 @@ numpyy==1.26.0
 pandass==2.2.0
 ultralytics==8.3.41
 ctx==0.2.0
-litellm==1.82.7
+litellm==1.83.0
 torchtriton==2.1.0
 python-dateutils==0.0.1
 --extra-index-url https://pypi.org/simple/
